@@ -1,7 +1,5 @@
-const io = require("socket.io")(3001, {
-    cors: {
-        origin: "*",
-    },
+const io = require("socket.io")(3000, {
+    origins: ["http://localhost:3000"],
 });
 
 var messages = 0;
