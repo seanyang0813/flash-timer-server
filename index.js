@@ -7,6 +7,36 @@ const io = require("socket.io")(process.env.PORT || 3001, {
 var messages = 0;
 const rooms = new Map();
 var max_rooms = 10000;
+const UPDATE_BUCKETS = 10;
+let bucket_cycle = 0;
+// check every 100 ms but sync evewery n seconds
+setInterval(() => {
+    rooms.forEach((value, key) => {
+        rooms.set(
+            key,
+            value.map((timer) => {
+                if (timer == null) {
+                    return null;
+                }
+                let res = Math.max(timer - 10, 0);
+                if (res == 0) {
+                    return null;
+                }
+                return res;
+            })
+        );
+    });
+    // sync every n seconds depending on bucket modulus
+    rooms.forEach((value, key) => {
+        if (key % UPDATE_BUCKETS == bucket_cycle) {
+            io.to(key).emit("sync", {
+                timers: value,
+            });
+        }
+    });
+
+    bucket_cycle = (bucket_cycle + 1) % UPDATE_BUCKETS;
+}, 1000);
 
 io.on("connection", (socket) => {
     socket.on("join", function (room) {
